@@ -204,7 +204,8 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
       $stats[$groupID]['removed']++;
     }
     // Log the batch unsubscribe details
-    CRM_Core_Error::debug_var( 'Google Group batchUnsubscribe $batch= ', $batch);
+    CRM_Core_Error::debug_var( 'Google Group batchUnsubscribe $batch= ', $batch, true, true, "googlegroup");
+
 
     if (!empty($batch)) {
       $results = civicrm_api('Googlegroups', 'deletemember', array('version' => 3, 'group_id' => $groupID, 'member' => $batch));
@@ -245,7 +246,8 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
       $results = civicrm_api('Googlegroups', 'subscribe', array('version' => 3, 'group_id' => $groupID, 'emails' => $batch, 'role' => 'MEMBER'));
     }
     // Log batch subscribe details
-    CRM_Core_Error::debug_var( 'Google Group batchSubscribe $batch= ', $batch);
+    CRM_Core_Error::debug_var( 'Google Group batchSubscribe $batch= ', $batch, true, true, "googlegroup");
+
     
     static::updatePushStats($stats);
 
