@@ -23,8 +23,11 @@ class CRM_Googlegroups_Form_Settings extends CRM_Core_Form {
         // Long lived refresh token are sent only first time.
         if ($client->getRefreshToken()) {
           GG::setAccessToken($client->getRefreshToken());
+          CRM_Core_Session::setStatus(E::ts('Connection with Google was successfully authorized.'), E::ts('Success'), 'success');
+        } else {
+          GG::setAccessToken('');
+          CRM_Core_Session::setStatus(E::ts('Something wrong. Couldn\'t fetch the refresh token.'), E::ts('Error'), 'error');
         }
-        CRM_Core_Session::setStatus(ts('Connection with Google was successfully authorized.'), ts('Success'), 'success');
       }
       CRM_Utils_System::redirect(CRM_Utils_System::url("civicrm/googlegroups/settings", 'reset=1'));
     }
@@ -41,11 +44,14 @@ class CRM_Googlegroups_Form_Settings extends CRM_Core_Form {
       'size' => 48,
     ));
     $accessToken = GG::getAccessToken();
-
+    $client = GG::getClient(FALSE);
+    if (!empty($accessToken)) {
+      $accessResult = $client->fetchAccessTokenWithRefreshToken($accessToken);
+    }
     $this->addButtons(array(
       array(
         'type' => 'submit',
-        'name' => !empty($accessToken) ? E::ts('Re-Authorize if Required') : E::ts('Authorize'),
+        'name' => $client->isAccessTokenExpired() ? E::ts('Click to Authorize') : E::ts('Authorized (Click to Re-Authorize)'),
         'isDefault' => TRUE,
       ),
     ));
@@ -75,9 +81,13 @@ class CRM_Googlegroups_Form_Settings extends CRM_Core_Form {
     // Overwrite settings
     GG::setSettings($params);
     // init token if required.
-    $client = GG::getClient();
-    // Being at this point means that we weren't redirected because of accessToken being valid.
-    CRM_Core_Session::setStatus(ts('Already authorized.'), ts('Success'), 'success');
+    $client = GG::getClient(TRUE, TRUE);
+
+    if ($client->isAccessTokenExpired()) {
+      CRM_Core_Session::setStatus(ts('Authorization failed.'), ts('Error'), 'error');
+    } else {
+      CRM_Core_Session::setStatus(ts('Access Token Refreshed.'), ts('Success'), 'success');
+    }
 
     parent::postProcess();
   }
