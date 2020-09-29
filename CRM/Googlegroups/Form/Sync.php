@@ -14,6 +14,14 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
   const END_PARAMS = 'state=done';
   const BATCH_COUNT = 10;
 
+  const EMAIL_PARAMS = array(
+                'from' => "fixme@example.com",
+                'toName' => "FIXME",
+                'toEmail' => "fixme@example.com",
+                'subject' => "CiviCRM-GG Syncing for ",
+		'text' => "%s\n\n%s\n\nAdminister at: https://admin.google.com/ac/groups/%s"
+        );
+
   /**
    * Function to pre processing
    *
@@ -203,8 +211,18 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
       $batch[] = $dao->email;
       $stats[$groupID]['removed']++;
     }
-    // Log the batch unsubscribe details
-    CRM_Core_Error::debug_var( 'Google Group batchUnsubscribe $batch= ', $batch);
+    // Log and email the batch unsubscribe details
+    if ($batch) {
+	CRM_Core_Error::debug_var( 'Google Group batchUnsubscribe [$groupID, $batch] ', ['groupID' => $groupID, 'batch' => $batch],  true, true, "googlegroup");
+
+        $mail_params = self::EMAIL_PARAMS;
+
+        $mail_params["subject"] .= $groupID;
+        $mail_params["text"] = sprintf($mail_params["text"], "Unsubscribing:", implode("\n", $batch), $groupID);
+
+        CRM_Utils_Mail::send($mail_params);
+	}
+
 
     if (!empty($batch)) {
       $results = civicrm_api('Googlegroups', 'deletemember', array('version' => 3, 'group_id' => $groupID, 'member' => $batch));
@@ -244,9 +262,19 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
     if (!empty($batch)) {
       $results = civicrm_api('Googlegroups', 'subscribe', array('version' => 3, 'group_id' => $groupID, 'emails' => $batch, 'role' => 'MEMBER'));
     }
-    // Log batch subscribe details
-    CRM_Core_Error::debug_var( 'Google Group batchSubscribe $batch= ', $batch);
-    
+    // Log and email batch subscribe details
+    if ($batch) {
+	CRM_Core_Error::debug_var( 'Google Group batchSubscribe [$groupID, $batch] ', ['groupID' => $groupID, 'batch' => $batch],  true, true, "googlegroup");
+
+	$mail_params = self::EMAIL_PARAMS;
+
+	$mail_params["subject"] .= $groupID;
+	$mail_params["text"] = sprintf($mail_params["text"], "Subscribing:", implode("\n", $batch), $groupID);
+
+	CRM_Utils_Mail::send($mail_params);
+
+	}
+
     static::updatePushStats($stats);
 
     // Finally, finish up by removing the two temporary tables
