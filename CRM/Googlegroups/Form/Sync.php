@@ -256,7 +256,7 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
     CRM_Core_DAO::executeQuery("DROP TABLE tmp_googlegroups_c;");
 
     $stats = GG::getStats();
-    CRM_Core_Error::debug_var("gg sync stats in the end", $stats);
+    CRM_Core_Error::debug_var("gg sync stats in the end", $stats, true, true, "googlegroup");
 
     return CRM_Queue_Task::TASK_SUCCESS;
   }
@@ -277,7 +277,7 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
     $db = $dao->getDatabaseConnection();
     $insert = $db->prepare('INSERT INTO tmp_googlegroups_g VALUES(?, ?)');
     $googleGroupMembers = civicrm_api('Googlegroups', 'getmembers', array('version' => 3, 'group_id' => $groupID));
-    CRM_Core_Error::debug_var('civicrm_api3_googlegroups_getmembers $googleGroupMembers', $googleGroupMembers);
+    CRM_Core_Error::debug_var('civicrm_api3_googlegroups_getmembers $googleGroupMembers', $googleGroupMembers, true, true, "googlegroup");
     foreach ($googleGroupMembers['values'] as $memberId => $memberEmail) {
       $db->execute($insert, array($memberEmail, $memberId));
     }
