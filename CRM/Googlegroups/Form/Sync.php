@@ -18,7 +18,7 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
                 'from' => "fixme@example.com",
                 'toName' => "FIXME",
                 'toEmail' => "fixme@example.com",
-                'subject' => "CiviCRM-GG Syncing for ",
+                'subject' => "CiviCRM GG-Syncing for %s",
 		'text' => "%s\n\n%s\n\nAdminister at: https://admin.google.com/ac/groups/%s"
         );
 
@@ -160,14 +160,14 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
     // Add the removals task to the queue
     $ctx->queue->createItem( new CRM_Queue_Task(
       array('CRM_Googlegroups_Form_Sync', 'syncPushRemove'),
-      array($groupID),
+      array($details['group_id'], $identifier),
       "$identifier: Removed those who should no longer be subscribed"
     ));
 
     // Add the batchUpdate to the queue
     $ctx->queue->createItem( new CRM_Queue_Task(
       array('CRM_Googlegroups_Form_Sync', 'syncPushAdd'),
-      array($groupID),
+      array($details['group_id'], $identifier),
       "$identifier: Added new subscribers and updating existing data changes"
     ));
 
@@ -196,7 +196,7 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
   /**
    * Unsubscribe contacts that are subscribed at Google Groups but not in our list.
    */
-  static function syncPushRemove(CRM_Queue_TaskContext $ctx, $groupID) {
+  static function syncPushRemove(CRM_Queue_TaskContext $ctx, $groupID, $identifier) {
     $dao = CRM_Core_DAO::executeQuery(
       "SELECT m.email, m.euid
        FROM tmp_googlegroups_g m
@@ -217,7 +217,7 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
 
         $mail_params = self::EMAIL_PARAMS;
 
-        $mail_params["subject"] .= $groupID;
+        $mail_params["subject"] = sprintf( $mail_params["subject"] , $identifier);
         $mail_params["text"] = sprintf($mail_params["text"], "Unsubscribing:", implode("\n", $batch), $groupID);
 
         CRM_Utils_Mail::send($mail_params);
@@ -242,7 +242,7 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
    *
    * This also does the clean-up tasks of removing the temporary tables.
    */
-  static function syncPushAdd(CRM_Queue_TaskContext $ctx, $groupID) {
+  static function syncPushAdd(CRM_Queue_TaskContext $ctx, $groupID, $identifier) {
     
     // To avoid 'already member exists' error thrown, so remove contacts alreay in Google from civi temp table 
     CRM_Core_DAO::executeQuery(
@@ -268,7 +268,7 @@ class CRM_Googlegroups_Form_Sync extends CRM_Core_Form {
 
 	$mail_params = self::EMAIL_PARAMS;
 
-	$mail_params["subject"] .= $groupID;
+        $mail_params["subject"] = sprintf( $mail_params["subject"] , $identifier);
 	$mail_params["text"] = sprintf($mail_params["text"], "Subscribing:", implode("\n", $batch), $groupID);
 
 	CRM_Utils_Mail::send($mail_params);
